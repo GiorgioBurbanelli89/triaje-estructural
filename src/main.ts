@@ -162,6 +162,11 @@ const btnCapturar = document.getElementById("btnCapturar") as HTMLButtonElement;
 const btnGaleria = document.getElementById("btnGaleria") as HTMLButtonElement;
 const btnAnalizarTexto = document.getElementById("btnAnalizarTexto") as HTMLButtonElement;
 const textoProblema = document.getElementById("textoProblema") as HTMLTextAreaElement;
+const btnToggleDescripcion = document.getElementById("btnToggleDescripcion") as HTMLButtonElement;
+const descripcionPanel = document.getElementById("descripcionPanel") as HTMLDivElement;
+const toggleDescArrow = document.getElementById("toggleDescArrow") as HTMLSpanElement;
+const quickChips = document.querySelectorAll(".quick-chip") as NodeListOf<HTMLButtonElement>;
+let quickSelections: Record<string, string> = {};
 
 // Config: Gemini
 const geminiKeyInput = document.getElementById("geminiKeyInput") as HTMLInputElement;
@@ -782,10 +787,10 @@ function getActiveSteps(): QuestionStep[] {
   });
 }
 
-function startQuestionnaire(texto: string) {
+function startQuestionnaire(texto: string, prefill?: Record<string, string>) {
   qOriginalText = texto;
   qCurrentStep = 0;
-  qAnswers = {};
+  qAnswers = prefill ? { ...prefill } : {};
   qIsSummary = false;
   btnQSkip.style.display = "";
   btnQSkipAll.style.display = "";
@@ -983,14 +988,39 @@ function compileDescription(): string {
   return parts.join("\n");
 }
 
+// ─── Quick Chips + Toggle Descripcion ────────────────
+quickChips.forEach(chip => {
+  chip.addEventListener("click", () => {
+    const group = chip.getAttribute("data-qsel")!;
+    const value = chip.getAttribute("data-value")!;
+    // Deselect siblings in same group
+    document.querySelectorAll(`.quick-chip[data-qsel="${group}"]`).forEach(c => c.classList.remove("selected"));
+    // Toggle: if already selected, deselect
+    if (quickSelections[group] === value) {
+      delete quickSelections[group];
+    } else {
+      quickSelections[group] = value;
+      chip.classList.add("selected");
+    }
+  });
+});
+
+btnToggleDescripcion.addEventListener("click", () => {
+  const visible = descripcionPanel.style.display !== "none";
+  descripcionPanel.style.display = visible ? "none" : "block";
+  toggleDescArrow.textContent = visible ? "▼" : "▲";
+});
+
 // ─── Event Listeners ────────────────────────────────
 btnCapturar.addEventListener("click", () => captureImage(false));
 btnGaleria.addEventListener("click", () => captureImage(true));
 
 btnAnalizarTexto.addEventListener("click", () => {
   const texto = textoProblema.value.trim();
-  if (!texto) {
-    alert("Por favor describe el problema estructural que observas.");
+  const hasChips = quickSelections["elemento"] || quickSelections["dano"];
+
+  if (!texto && !hasChips) {
+    alert("Selecciona al menos un elemento o tipo de dano, o describe el problema.");
     return;
   }
   if (!getCurrentKey()) {
@@ -998,7 +1028,19 @@ btnAnalizarTexto.addEventListener("click", () => {
     navigateTo("config");
     return;
   }
-  startQuestionnaire(texto);
+
+  // Build initial description from chips + text
+  const parts: string[] = [];
+  if (quickSelections["elemento"]) parts.push(quickSelections["elemento"]);
+  if (quickSelections["dano"]) parts.push(`con ${quickSelections["dano"]}`);
+  if (texto) parts.push(texto);
+  const initialText = parts.join(" ").trim() || texto;
+
+  // Pre-fill questionnaire answers from chips
+  const prefill: Record<string, string> = {};
+  if (quickSelections["elemento"]) prefill["elemento"] = quickSelections["elemento"];
+  if (quickSelections["dano"]) prefill["dano"] = quickSelections["dano"];
+  startQuestionnaire(initialText, prefill);
 });
 
 // Cuestionario navigation

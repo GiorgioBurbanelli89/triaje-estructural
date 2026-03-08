@@ -34,17 +34,58 @@
       <!-- Separador -->
       <div class="separator">
         <span class="separator-line"></span>
-        <span class="separator-text">o describe el problema</span>
+        <span class="separator-text">o selecciona el problema</span>
         <span class="separator-line"></span>
       </div>
 
-      <!-- Modo Texto -->
-      <div class="texto-input-container">
-        <textarea id="textoProblema" class="texto-input" rows="5" placeholder="Describe detalladamente la falla estructural:&#10;&#10;• Elemento: columna, viga, losa, muro, cimentacion&#10;• Tipo de dano: grietas, corrosion, desprendimiento&#10;• Profundidad: solo pintura/enlucido o concreto&#10;• Orientacion: diagonal 45°, horizontal, vertical&#10;• Severidad: ancho de grieta, extension&#10;• Material expuesto: acero visible, oxidado&#10;&#10;Ej: Columna con grietas diagonales que atraviesan el enlucido hasta el concreto, acero expuesto con oxidacion"></textarea>
-        <button id="btnAnalizarTexto" class="btn-primary">
-          ✍️ Analizar Descripcion
-        </button>
+      <!-- Seleccion rapida: Elemento -->
+      <div class="quick-section">
+        <p class="quick-label">Elemento afectado</p>
+        <div class="quick-chips" id="chipsElemento">
+          <button class="quick-chip" data-qsel="elemento" data-value="columna">🏛️ Columna</button>
+          <button class="quick-chip" data-qsel="elemento" data-value="viga">📏 Viga</button>
+          <button class="quick-chip" data-qsel="elemento" data-value="losa">⬜ Losa</button>
+          <button class="quick-chip" data-qsel="elemento" data-value="muro">🧱 Muro</button>
+          <button class="quick-chip" data-qsel="elemento" data-value="cimentacion">🔲 Cimentacion</button>
+          <button class="quick-chip" data-qsel="elemento" data-value="pilote">🔩 Pilote</button>
+        </div>
       </div>
+
+      <!-- Seleccion rapida: Tipo de dano -->
+      <div class="quick-section">
+        <p class="quick-label">Tipo de dano</p>
+        <div class="quick-chips" id="chipsDano">
+          <button class="quick-chip" data-qsel="dano" data-value="grietas">⚡ Grietas</button>
+          <button class="quick-chip" data-qsel="dano" data-value="corrosion">🟤 Corrosion</button>
+          <button class="quick-chip" data-qsel="dano" data-value="desprendimiento">💥 Desprendimiento</button>
+          <button class="quick-chip" data-qsel="dano" data-value="deformacion">〰️ Deformacion</button>
+          <button class="quick-chip" data-qsel="dano" data-value="hundimiento">⬇️ Hundimiento</button>
+          <button class="quick-chip" data-qsel="dano" data-value="humedad">💧 Humedad</button>
+        </div>
+      </div>
+
+      <!-- Describir problema (expandible) -->
+      <button id="btnToggleDescripcion" class="btn-toggle-desc">
+        ✍️ Describir el problema <span id="toggleDescArrow">▼</span>
+      </button>
+      <div id="descripcionPanel" class="descripcion-panel" style="display:none;">
+        <div class="desc-guia">
+          <p class="desc-guia-title">Como describir correctamente:</p>
+          <ul>
+            <li><strong>Profundidad:</strong> solo pintura/enlucido, o llega al concreto/acero?</li>
+            <li><strong>Orientacion:</strong> grietas diagonales 45°, horizontales, verticales?</li>
+            <li><strong>Severidad:</strong> ancho de grieta, cuanta area abarca?</li>
+            <li><strong>Material expuesto:</strong> se ve el acero? esta oxidado?</li>
+          </ul>
+          <p class="desc-guia-ejemplo">Ej: "Grietas diagonales en concreto, acero visible oxidado, 2mm de ancho"</p>
+        </div>
+        <textarea id="textoProblema" class="texto-input" rows="4" placeholder="Describe los detalles adicionales del problema..."></textarea>
+      </div>
+
+      <!-- Boton Analizar -->
+      <button id="btnAnalizarTexto" class="btn-primary btn-large" style="margin-top:12px;">
+        🔍 Analizar Problema
+      </button>
 
       <div class="features">
         <div class="feature-item">
