@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0F172A">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Triaje Estructural</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+
+  <!-- ═══ Pantalla: Inicio ═══ -->
+  <div id="page-inicio" class="page active">
+    <header class="app-header">
+      <h1 class="app-title">🏗️ Triaje Estructural</h1>
+    </header>
+    <div class="page-body">
+      <div class="hero">
+        <div class="hero-icon">📷</div>
+        <h2>Evaluacion de Danos Estructurales</h2>
+        <p>Toma una foto o describe la falla estructural para obtener un diagnostico con nivel de peligro y recomendaciones.</p>
+      </div>
+
+      <!-- Modo Foto -->
+      <button id="btnCapturar" class="btn-primary btn-large">
+        📷 Evaluar con Foto
+      </button>
+      <button id="btnGaleria" class="btn-secondary">
+        🖼️ Seleccionar de Galeria
+      </button>
+
+      <!-- Separador -->
+      <div class="separator">
+        <span class="separator-line"></span>
+        <span class="separator-text">o describe el problema</span>
+        <span class="separator-line"></span>
+      </div>
+
+      <!-- Modo Texto -->
+      <div class="texto-input-container">
+        <textarea id="textoProblema" class="texto-input" rows="4" placeholder="Describe la falla estructural que observas...&#10;&#10;Ejemplo: Grietas diagonales a 45 grados en columna de concreto, con desprendimiento de recubrimiento y acero expuesto oxidado."></textarea>
+        <button id="btnAnalizarTexto" class="btn-primary">
+          ✍️ Analizar Descripcion
+        </button>
+      </div>
+
+      <div class="features">
+        <div class="feature-item">
+          <span class="feature-icon">🔴</span>
+          <span>Clasificacion por nivel de peligro</span>
+        </div>
+        <div class="feature-item">
+          <span class="feature-icon">📋</span>
+          <span>Recomendaciones de reparacion</span>
+        </div>
+        <div class="feature-item">
+          <span class="feature-icon">📖</span>
+          <span>Guia de metodos de reparacion</span>
+        </div>
+        <div class="feature-item">
+          <span class="feature-icon">🆓</span>
+          <span>Usa Google Gemini (GRATIS)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ Pantalla: Resultado ═══ -->
+  <div id="page-resultado" class="page">
+    <header class="app-header">
+      <button class="back-btn" data-nav="inicio">← Inicio</button>
+      <h1 class="app-title">Resultado</h1>
+    </header>
+    <div class="page-body" id="resultBody">
+      <!-- Populated by JS -->
+    </div>
+  </div>
+
+  <!-- ═══ Pantalla: Historial ═══ -->
+  <div id="page-historial" class="page">
+    <header class="app-header">
+      <h1 class="app-title">📋 Historial</h1>
+    </header>
+    <div class="page-body" id="historialBody">
+      <!-- Populated by JS -->
+    </div>
+  </div>
+
+  <!-- ═══ Pantalla: Guia ═══ -->
+  <div id="page-guia" class="page">
+    <header class="app-header">
+      <h1 class="app-title">📖 Guia de Reparacion</h1>
+    </header>
+    <div class="page-body" id="guiaBody">
+      <!-- Populated by JS -->
+    </div>
+  </div>
+
+  <!-- ═══ Pantalla: Configuracion ═══ -->
+  <div id="page-config" class="page">
+    <header class="app-header">
+      <h1 class="app-title">⚙️ Configuracion</h1>
+    </header>
+    <div class="page-body">
+      <div class="config-card">
+        <h3>Proveedor de IA</h3>
+        <p class="config-desc">Selecciona el servicio de inteligencia artificial para el analisis.</p>
+        <div class="provider-selector">
+          <button id="btnProviderGemini" class="provider-btn active" data-provider="gemini">
+            <span class="provider-icon">🟢</span>
+            <span class="provider-name">Google Gemini</span>
+            <span class="provider-badge">GRATIS</span>
+          </button>
+          <button id="btnProviderClaude" class="provider-btn" data-provider="claude">
+            <span class="provider-icon">🟣</span>
+            <span class="provider-name">Claude (Anthropic)</span>
+            <span class="provider-badge paid">DE PAGO</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="config-card" id="configGemini">
+        <h3>API Key de Google Gemini (Gratis)</h3>
+        <p class="config-desc">
+          Obtén tu API key gratis en
+          <a href="https://aistudio.google.com/apikey" target="_blank" style="color:#60A5FA;text-decoration:underline;">Google AI Studio</a>.
+          <br>Solo necesitas una cuenta de Google.
+        </p>
+        <input type="password" id="geminiKeyInput" class="config-input" placeholder="AIzaSy...">
+        <button id="btnGuardarGemini" class="btn-primary">Guardar API Key Gemini</button>
+        <div id="geminiKeyStatus" class="key-status"></div>
+      </div>
+
+      <div class="config-card" id="configClaude" style="display:none;">
+        <h3>API Key de Claude (Anthropic)</h3>
+        <p class="config-desc">Ingresa tu API key de Anthropic (de pago).</p>
+        <input type="password" id="apiKeyInput" class="config-input" placeholder="sk-ant-...">
+        <button id="btnGuardarKey" class="btn-primary">Guardar API Key Claude</button>
+        <div id="keyStatus" class="key-status"></div>
+      </div>
+
+      <div class="config-card">
+        <h3>Acerca de</h3>
+        <p class="config-desc">Triaje Estructural v2.0<br>Evaluacion de danos con inteligencia artificial.<br>Compatible con Google Gemini (gratis) y Claude de Anthropic.<br>Basado en "Criterios de Diseno y Detalles Estructurales".</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ Loading Overlay ═══ -->
+  <div id="loadingOverlay" class="loading-overlay" style="display:none;">
+    <div class="loading-content">
+      <div class="spinner"></div>
+      <p>Analizando estructura...</p>
+      <p class="loading-sub">Evaluando danos y clasificando peligro</p>
+    </div>
+  </div>
+
+  <!-- ═══ Tab Bar (bottom navigation) ═══ -->
+  <nav class="tab-bar">
+    <button class="tab-btn active" data-tab="inicio">
+      <span class="tab-icon">🏠</span>
+      <span class="tab-label">Inicio</span>
+    </button>
+    <button class="tab-btn" data-tab="historial">
+      <span class="tab-icon">📋</span>
+      <span class="tab-label">Historial</span>
+    </button>
+    <button class="tab-btn" data-tab="guia">
+      <span class="tab-icon">📖</span>
+      <span class="tab-label">Guia</span>
+    </button>
+    <button class="tab-btn" data-tab="config">
+      <span class="tab-icon">⚙️</span>
+      <span class="tab-label">Config</span>
+    </button>
+  </nav>
+
+  <script type="module" src="./main.ts"></script>
+</body>
+</html>
