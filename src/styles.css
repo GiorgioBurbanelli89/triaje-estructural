@@ -449,6 +449,26 @@ html, body {
   font-size: 12px; font-weight: 600; color: var(--fg);
   text-align: center; line-height: 15px; white-space: pre-line;
 }
+/* "Otro - Describir" in questionnaire */
+.q-otro-btn {
+  display: flex; align-items: center; justify-content: center;
+  gap: 6px; width: 100%; padding: 10px;
+  background: none; border: 1px dashed var(--border);
+  border-radius: var(--radius); color: var(--fg2);
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  margin-bottom: 8px;
+}
+.q-otro-btn:active { background: var(--bg2); }
+.q-otro-btn.selected { border-color: var(--accent); color: var(--accent); border-style: solid; background: var(--accent-light); }
+.q-otro-input { margin-bottom: 8px; }
+.q-otro-field {
+  display: block; width: 100%; padding: 12px;
+  border: 2px solid var(--accent); border-radius: 8px;
+  font-size: 14px; font-family: inherit;
+  background: var(--bg2); color: var(--fg);
+}
+.q-otro-field:focus { outline: none; }
+
 .q-nav {
   display: flex; gap: 10px; margin-top: 8px;
 }

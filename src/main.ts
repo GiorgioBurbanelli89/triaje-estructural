@@ -828,7 +828,14 @@ function renderCurrentStep() {
       <span class="q-option-label">${opt.label}</span>
     </button>`;
   }
+  // "Otro - Describir" option
+  const otroKey = `${step.id}_otro`;
+  const isOtroSelected = currentValue === "_otro";
   html += `</div>`;
+  html += `<button class="q-otro-btn ${isOtroSelected ? 'selected' : ''}" id="btnOtro_${step.id}">✍️ Otro - Describir</button>`;
+  html += `<div class="q-otro-input" id="otroInput_${step.id}" style="display:${isOtroSelected ? 'block' : 'none'};">
+    <input type="text" class="q-otro-field" id="otroField_${step.id}" placeholder="Describe..." value="${qAnswers[otroKey] || ''}">
+  </div>`;
 
   if (step.subQuestion) {
     html += `<p class="q-subtitle" style="margin-top:4px;">${step.subQuestion.title}</p>`;
@@ -849,6 +856,7 @@ function renderCurrentStep() {
   btnQSkipAll.style.display = "";
   qIsSummary = false;
 
+  // Option click handlers
   qStepContainer.querySelectorAll(".q-option").forEach(btn => {
     btn.addEventListener("click", () => {
       const stepId = btn.getAttribute("data-step")!;
@@ -857,8 +865,33 @@ function renderCurrentStep() {
       const siblings = btn.parentElement!.querySelectorAll(".q-option");
       siblings.forEach(s => s.classList.remove("selected"));
       btn.classList.add("selected");
+      // Deselect "Otro" if a regular option is clicked
+      if (stepId === step.id) {
+        const otroBtn = document.getElementById(`btnOtro_${step.id}`);
+        const otroDiv = document.getElementById(`otroInput_${step.id}`);
+        if (otroBtn) otroBtn.classList.remove("selected");
+        if (otroDiv) otroDiv.style.display = "none";
+      }
     });
   });
+
+  // "Otro" button handler
+  const otroBtn = document.getElementById(`btnOtro_${step.id}`);
+  const otroDiv = document.getElementById(`otroInput_${step.id}`);
+  const otroField = document.getElementById(`otroField_${step.id}`) as HTMLInputElement | null;
+  if (otroBtn && otroDiv && otroField) {
+    otroBtn.addEventListener("click", () => {
+      // Deselect all regular options
+      qStepContainer.querySelectorAll(`.q-option[data-step="${step.id}"]`).forEach(s => s.classList.remove("selected"));
+      otroBtn.classList.add("selected");
+      otroDiv.style.display = "block";
+      qAnswers[step.id] = "_otro";
+      otroField.focus();
+    });
+    otroField.addEventListener("input", () => {
+      qAnswers[otroKey] = otroField.value;
+    });
+  }
 
   cuestionarioBody.scrollTop = 0;
 }
@@ -880,10 +913,19 @@ function showSummaryStep() {
   for (const step of activeSteps) {
     const answer = qAnswers[step.id];
     const opt = step.options.find(o => o.value === answer);
+    let displayValue = "No especificado";
+    let isSkip = true;
+    if (answer === "_otro" && qAnswers[`${step.id}_otro`]) {
+      displayValue = `"${qAnswers[`${step.id}_otro`]}"`;
+      isSkip = false;
+    } else if (opt) {
+      displayValue = opt.label.replace(/\n/g, " ");
+      isSkip = false;
+    }
     html += `<div class="q-summary-item">
       <span class="q-summary-label">${step.title}</span>
-      <span class="q-summary-value ${!answer ? 'q-summary-skip' : ''}">
-        ${opt ? opt.label.replace(/\n/g, " ") : "No especificado"}
+      <span class="q-summary-value ${isSkip ? 'q-summary-skip' : ''}">
+        ${displayValue}
       </span>
     </div>`;
     if (step.subQuestion && qAnswers[step.subQuestion.id]) {
@@ -902,83 +944,73 @@ function showSummaryStep() {
   cuestionarioBody.scrollTop = 0;
 }
 
+function resolveAnswer(stepId: string, labels: Record<string, string>): string | null {
+  const val = qAnswers[stepId];
+  if (!val) return null;
+  if (val === "_otro") return qAnswers[`${stepId}_otro`] || null;
+  return labels[val] || val;
+}
+
 function compileDescription(): string {
   const parts: string[] = [`Descripcion del usuario: ${qOriginalText}`];
   const structured: string[] = [];
 
-  const elemento = qAnswers["elemento"];
-  if (elemento) {
-    const labels: Record<string, string> = {
-      columna: "Columna", viga: "Viga", losa: "Losa de entrepiso/azotea",
-      muro: "Muro", cimentacion: "Cimentacion/zapata", pilote: "Pilote",
-    };
-    structured.push(`Elemento afectado: ${labels[elemento] || elemento}`);
-  }
+  const elemento = resolveAnswer("elemento", {
+    columna: "Columna", viga: "Viga", losa: "Losa de entrepiso/azotea",
+    muro: "Muro", cimentacion: "Cimentacion/zapata", pilote: "Pilote",
+  });
+  if (elemento) structured.push(`Elemento afectado: ${elemento}`);
 
-  const dano = qAnswers["dano"];
-  if (dano) {
-    const labels: Record<string, string> = {
-      grietas: "Grietas y fisuras", corrosion: "Corrosion del acero de refuerzo",
-      desprendimiento: "Desprendimiento de concreto/recubrimiento",
-      deformacion: "Deformacion o pandeo del elemento",
-      hundimiento: "Hundimiento o asentamiento diferencial",
-      humedad: "Humedad y filtraciones",
-    };
-    structured.push(`Tipo de dano: ${labels[dano] || dano}`);
-  }
+  const dano = resolveAnswer("dano", {
+    grietas: "Grietas y fisuras", corrosion: "Corrosion del acero de refuerzo",
+    desprendimiento: "Desprendimiento de concreto/recubrimiento",
+    deformacion: "Deformacion o pandeo del elemento",
+    hundimiento: "Hundimiento o asentamiento diferencial",
+    humedad: "Humedad y filtraciones",
+  });
+  if (dano) structured.push(`Tipo de dano: ${dano}`);
 
-  const prof = qAnswers["profundidad"];
-  if (prof) {
-    const labels: Record<string, string> = {
-      pintura: "Superficial - solo afecta pintura o enlucido",
-      recubrimiento: "Concreto de recubrimiento expuesto (superficial)",
-      estructural: "Dano al concreto estructural (profundo)",
-      acero_visible: "Acero de refuerzo visible (profundo)",
-      acero_oxidado: "Acero de refuerzo oxidado con perdida de seccion (profundo, corrosion activa)",
-    };
-    structured.push(`Profundidad: ${labels[prof] || prof}`);
-  }
+  const prof = resolveAnswer("profundidad", {
+    pintura: "Superficial - solo afecta pintura o enlucido",
+    recubrimiento: "Concreto de recubrimiento expuesto (superficial)",
+    estructural: "Dano al concreto estructural (profundo)",
+    acero_visible: "Acero de refuerzo visible (profundo)",
+    acero_oxidado: "Acero de refuerzo oxidado con perdida de seccion (profundo, corrosion activa)",
+  });
+  if (prof) structured.push(`Profundidad: ${prof}`);
 
-  const grietaOrient = qAnswers["grietas_detalle"];
-  if (grietaOrient) {
-    const labels: Record<string, string> = {
-      diagonal_45: "Diagonales a 45 grados (sugiere falla por cortante)",
-      horizontal: "Horizontales (sugiere falla por flexion)",
-      vertical: "Verticales (sugiere falla por flexion)",
-      helicoidal: "Helicoidales/espiral (sugiere falla por torsion)",
-      mapa: "Ramificadas tipo mapa (dano generalizado)",
-    };
-    structured.push(`Orientacion de grietas: ${labels[grietaOrient] || grietaOrient}`);
-  }
+  const grietaOrient = resolveAnswer("grietas_detalle", {
+    diagonal_45: "Diagonales a 45 grados (sugiere falla por cortante)",
+    horizontal: "Horizontales (sugiere falla por flexion)",
+    vertical: "Verticales (sugiere falla por flexion)",
+    helicoidal: "Helicoidales/espiral (sugiere falla por torsion)",
+    mapa: "Ramificadas tipo mapa (dano generalizado)",
+  });
+  if (grietaOrient) structured.push(`Orientacion de grietas: ${grietaOrient}`);
 
   const grietaAncho = qAnswers["grietas_ancho"];
   if (grietaAncho) structured.push(`Ancho de grietas: ${grietaAncho}`);
 
-  const ext = qAnswers["extension"];
-  if (ext) {
-    structured.push(`Extension: ${ext === "localizado" ? "Dano localizado en area pequena" : "Dano generalizado en multiples zonas"}`);
-  }
+  const ext = resolveAnswer("extension", {
+    localizado: "Dano localizado en area pequena",
+    generalizado: "Dano generalizado en multiples zonas",
+  });
+  if (ext) structured.push(`Extension: ${ext}`);
 
-  const mov = qAnswers["movimiento"];
-  if (mov) {
-    const labels: Record<string, string> = {
-      sin_movimiento: "Grietas sin movimiento (estables)",
-      con_movimiento: "Grietas con movimiento activo (siguen creciendo)",
-      no_se: "No se ha determinado si hay movimiento",
-    };
-    structured.push(`Movimiento: ${labels[mov] || mov}`);
-  }
+  const mov = resolveAnswer("movimiento", {
+    sin_movimiento: "Grietas sin movimiento (estables)",
+    con_movimiento: "Grietas con movimiento activo (siguen creciendo)",
+    no_se: "No se ha determinado si hay movimiento",
+  });
+  if (mov) structured.push(`Movimiento: ${mov}`);
 
-  const sev = qAnswers["severidad"];
-  if (sev) {
-    const labels: Record<string, string> = {
-      estetico: "El usuario percibe el dano como solo estetico",
-      preocupante: "El usuario percibe el dano como preocupante pero la estructura parece estable",
-      peligroso: "El usuario percibe la situacion como peligrosa con deformacion visible",
-      emergencia: "EMERGENCIA: El usuario reporta riesgo de colapso, post-sismo o post-incendio",
-    };
-    structured.push(`Severidad percibida: ${labels[sev] || sev}`);
-  }
+  const sev = resolveAnswer("severidad", {
+    estetico: "El usuario percibe el dano como solo estetico",
+    preocupante: "El usuario percibe el dano como preocupante pero la estructura parece estable",
+    peligroso: "El usuario percibe la situacion como peligrosa con deformacion visible",
+    emergencia: "EMERGENCIA: El usuario reporta riesgo de colapso, post-sismo o post-incendio",
+  });
+  if (sev) structured.push(`Severidad percibida: ${sev}`);
 
   if (structured.length > 0) {
     parts.push("\nInformacion estructurada del cuestionario:");
