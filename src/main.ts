@@ -63,30 +63,15 @@ const historialBody = document.getElementById("historialBody") as HTMLDivElement
 const guiaBody = document.getElementById("guiaBody") as HTMLDivElement;
 const loadingOverlay = document.getElementById("loadingOverlay") as HTMLDivElement;
 
-// ─── System Prompt (shared) ──────────────────────────
-const SYSTEM_PROMPT = `Eres un perito estructural experto con 30 anos de experiencia en evaluacion de danos estructurales.
-Analiza la informacion proporcionada (imagen o descripcion) y proporciona un diagnostico detallado.
+// ─── System Prompt (shared, optimized for low token usage) ─────
+const SYSTEM_PROMPT = `Perito estructural experto. Analiza la informacion y diagnostica.
+Responde SOLO JSON valido (sin markdown):
+{"tipo_falla":"string","nivel_peligro":"critico|alto|medio|bajo","debe_desalojar":bool,"descripcion":"string","recomendaciones":["string"],"urgencia":"string"}
 
-DEBES responder UNICAMENTE con un JSON valido (sin markdown, sin bloques de codigo) con esta estructura exacta:
-{
-  "tipo_falla": "nombre del tipo de falla detectada",
-  "nivel_peligro": "critico|alto|medio|bajo",
-  "debe_desalojar": true/false,
-  "descripcion": "descripcion detallada de lo observado o analizado",
-  "recomendaciones": ["recomendacion 1", "recomendacion 2", ...],
-  "urgencia": "descripcion de la urgencia de intervencion"
-}
+Niveles: CRITICO=colapso inminente,desalojar. ALTO=peligro,reparar urgente. MEDIO=atencion programada. BAJO=monitorear.
+Sin falla clara: nivel_peligro="bajo".
 
-Criterios de clasificacion:
-- CRITICO (rojo): Colapso inminente, desalojar inmediatamente. Columnas aplastadas, deformaciones severas, pandeo de elementos principales.
-- ALTO (naranja): Peligro significativo, reparacion urgente. Grietas diagonales en elementos de carga, corrosion avanzada, perdida parcial de seccion.
-- MEDIO (amarillo): Requiere atencion programada. Grietas por flexion menores, desprendimiento de recubrimiento, humedad moderada.
-- BAJO (verde): Sin peligro inmediato, monitorear. Fisuras capilares, manchas superficiales, desgaste normal.
-
-Si no se puede determinar una falla estructural, responde con nivel_peligro "bajo" y en descripcion indica que no se detecta falla estructural clara.
-
-IMPORTANTE: Basa tus recomendaciones de reparacion en el siguiente documento tecnico de referencia. Cuando sugieras metodos de reparacion, utiliza los procedimientos, materiales y especificaciones de este documento:
-
+Basa recomendaciones en este documento tecnico:
 ${CRITERIOS_DISENO_KNOWLEDGE}`;
 
 // ─── Navigation ──────────────────────────────────────
@@ -330,7 +315,7 @@ function parseJsonResponse(text: string): ResultadoTriaje {
 
 async function callGeminiImage(base64: string, format: string): Promise<ResultadoTriaje> {
   const mimeType = format === "png" ? "image/png" : "image/jpeg";
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`;
 
   const response = await fetch(url, {
     method: "POST",
@@ -340,10 +325,10 @@ async function callGeminiImage(base64: string, format: string): Promise<Resultad
       contents: [{
         parts: [
           { inline_data: { mime_type: mimeType, data: base64 } },
-          { text: "Analiza esta imagen de la estructura y proporciona tu diagnostico como perito estructural. Responde SOLO con el JSON." }
+          { text: "Diagnostica esta estructura. Solo JSON." }
         ]
       }],
-      generationConfig: { maxOutputTokens: 2048, temperature: 0.3 }
+      generationConfig: { maxOutputTokens: 4096, temperature: 0.3 }
     }),
   });
 
@@ -358,7 +343,7 @@ async function callGeminiImage(base64: string, format: string): Promise<Resultad
 }
 
 async function callGeminiText(texto: string): Promise<ResultadoTriaje> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`;
 
   const response = await fetch(url, {
     method: "POST",
@@ -367,10 +352,10 @@ async function callGeminiText(texto: string): Promise<ResultadoTriaje> {
       system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
       contents: [{
         parts: [
-          { text: `El usuario describe el siguiente problema estructural. Analiza la descripcion y proporciona tu diagnostico como perito estructural con recomendaciones de reparacion basadas en el documento de referencia. Responde SOLO con el JSON.\n\nDESCRIPCION DEL PROBLEMA:\n${texto}` }
+          { text: `Diagnostica este problema estructural. Solo JSON.\n\n${texto}` }
         ]
       }],
-      generationConfig: { maxOutputTokens: 2048, temperature: 0.3 }
+      generationConfig: { maxOutputTokens: 4096, temperature: 0.3 }
     }),
   });
 
@@ -404,7 +389,7 @@ async function callClaudeImage(base64: string, format: string): Promise<Resultad
         role: "user",
         content: [
           { type: "image", source: { type: "base64", media_type: mediaType, data: base64 } },
-          { type: "text", text: "Analiza esta imagen de la estructura y proporciona tu diagnostico como perito estructural. Responde SOLO con el JSON." }
+          { type: "text", text: "Diagnostica esta estructura. Solo JSON." }
         ]
       }]
     }),
@@ -435,7 +420,7 @@ async function callClaudeText(texto: string): Promise<ResultadoTriaje> {
       system: SYSTEM_PROMPT,
       messages: [{
         role: "user",
-        content: `El usuario describe el siguiente problema estructural. Analiza la descripcion y proporciona tu diagnostico como perito estructural con recomendaciones de reparacion basadas en el documento de referencia. Responde SOLO con el JSON.\n\nDESCRIPCION DEL PROBLEMA:\n${texto}`
+        content: `Diagnostica este problema estructural. Solo JSON.\n\n${texto}`
       }]
     }),
   });
