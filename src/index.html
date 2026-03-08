@@ -40,7 +40,7 @@
 
       <!-- Modo Texto -->
       <div class="texto-input-container">
-        <textarea id="textoProblema" class="texto-input" rows="4" placeholder="Describe la falla estructural que observas...&#10;&#10;Ejemplo: Grietas diagonales a 45 grados en columna de concreto, con desprendimiento de recubrimiento y acero expuesto oxidado."></textarea>
+        <textarea id="textoProblema" class="texto-input" rows="5" placeholder="Describe detalladamente la falla estructural:&#10;&#10;• Elemento: columna, viga, losa, muro, cimentacion&#10;• Tipo de dano: grietas, corrosion, desprendimiento&#10;• Profundidad: solo pintura/enlucido o concreto&#10;• Orientacion: diagonal 45°, horizontal, vertical&#10;• Severidad: ancho de grieta, extension&#10;• Material expuesto: acero visible, oxidado&#10;&#10;Ej: Columna con grietas diagonales que atraviesan el enlucido hasta el concreto, acero expuesto con oxidacion"></textarea>
         <button id="btnAnalizarTexto" class="btn-primary">
           ✍️ Analizar Descripcion
         </button>
@@ -64,6 +64,26 @@
           <span>Usa Google Gemini (GRATIS)</span>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- ═══ Pantalla: Cuestionario Pre-Analisis ═══ -->
+  <div id="page-cuestionario" class="page">
+    <header class="app-header">
+      <button class="back-btn" id="btnCuestionarioBack">← Volver</button>
+      <h1 class="app-title">Detalle del Dano</h1>
+      <span id="cuestionarioStep" class="step-indicator">1/7</span>
+    </header>
+    <div class="page-body" id="cuestionarioBody">
+      <div class="q-progress">
+        <div class="q-progress-bar" id="qProgressBar"></div>
+      </div>
+      <div id="qStepContainer"></div>
+      <div class="q-nav">
+        <button class="btn-secondary q-skip" id="btnQSkip">Omitir</button>
+        <button class="btn-primary q-next" id="btnQNext">Siguiente</button>
+      </div>
+      <button class="q-skip-all" id="btnQSkipAll">Analizar sin cuestionario →</button>
     </div>
   </div>
 

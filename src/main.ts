@@ -5,6 +5,7 @@
  */
 import { GUIA_REPARACION } from "./guia-data.js";
 import { CRITERIOS_DISENO_KNOWLEDGE } from "./criterios-knowledge.js";
+import { generarListaImagenes, buscarImagen } from "./imagen-catalogo.js";
 
 // ─── Interfaces ──────────────────────────────────────
 interface ResultadoTriaje {
@@ -14,6 +15,7 @@ interface ResultadoTriaje {
   descripcion: string;
   recomendaciones: string[];
   urgencia: string;
+  imagen_referencia?: string;
 }
 
 interface Reporte {
@@ -27,12 +29,131 @@ interface Reporte {
 
 type Provider = "gemini" | "claude";
 
+// ─── Cuestionario: Data ─────────────────────────────
+interface QuestionOption {
+  value: string;
+  label: string;
+  icon: string;
+}
+
+interface QuestionStep {
+  id: string;
+  title: string;
+  subtitle: string;
+  options: QuestionOption[];
+  multiSelect: boolean;
+  conditional?: (answers: Record<string, string>) => boolean;
+  subQuestion?: {
+    id: string;
+    title: string;
+    options: QuestionOption[];
+  };
+}
+
+const QUESTION_STEPS: QuestionStep[] = [
+  {
+    id: "elemento", title: "Tipo de Elemento",
+    subtitle: "Selecciona el elemento estructural afectado",
+    multiSelect: false,
+    options: [
+      { value: "columna", label: "Columna", icon: "🏛️" },
+      { value: "viga", label: "Viga", icon: "📏" },
+      { value: "losa", label: "Losa", icon: "⬜" },
+      { value: "muro", label: "Muro", icon: "🧱" },
+      { value: "cimentacion", label: "Cimentacion", icon: "🔲" },
+      { value: "pilote", label: "Pilote", icon: "🔩" },
+    ]
+  },
+  {
+    id: "dano", title: "Tipo de Dano",
+    subtitle: "Que tipo de dano observas?",
+    multiSelect: false,
+    options: [
+      { value: "grietas", label: "Grietas\nFisuras", icon: "⚡" },
+      { value: "corrosion", label: "Corrosion\nOxidacion", icon: "🟤" },
+      { value: "desprendimiento", label: "Despren-\ndimiento", icon: "💥" },
+      { value: "deformacion", label: "Deformacion\nPandeo", icon: "〰️" },
+      { value: "hundimiento", label: "Hundimiento", icon: "⬇️" },
+      { value: "humedad", label: "Humedad\nFiltracion", icon: "💧" },
+    ]
+  },
+  {
+    id: "profundidad", title: "Profundidad del Dano",
+    subtitle: "Hasta donde penetra el dano?",
+    multiSelect: false,
+    options: [
+      { value: "pintura", label: "Solo pintura\no enlucido", icon: "🎨" },
+      { value: "recubrimiento", label: "Concreto\nsuperficial", icon: "🔳" },
+      { value: "estructural", label: "Concreto\nestructural", icon: "🧊" },
+      { value: "acero_visible", label: "Acero\nvisible", icon: "🔧" },
+      { value: "acero_oxidado", label: "Acero\noxidado", icon: "🟫" },
+    ]
+  },
+  {
+    id: "grietas_detalle", title: "Orientacion de Grietas",
+    subtitle: "Como se orientan las grietas?",
+    multiSelect: false,
+    conditional: (a) => a["dano"] === "grietas",
+    options: [
+      { value: "diagonal_45", label: "Diagonal\n45°", icon: "↗️" },
+      { value: "horizontal", label: "Horizontal", icon: "➡️" },
+      { value: "vertical", label: "Vertical", icon: "⬆️" },
+      { value: "helicoidal", label: "Helicoidal\nEspiral", icon: "🌀" },
+      { value: "mapa", label: "Ramificadas\nMapa", icon: "🕸️" },
+    ],
+    subQuestion: {
+      id: "grietas_ancho", title: "Ancho aproximado de grietas",
+      options: [
+        { value: "<0.3mm", label: "<0.3mm", icon: "" },
+        { value: "0.3-1mm", label: "0.3-1mm", icon: "" },
+        { value: "1-3mm", label: "1-3mm", icon: "" },
+        { value: ">3mm", label: ">3mm", icon: "" },
+      ]
+    }
+  },
+  {
+    id: "extension", title: "Extension del Dano",
+    subtitle: "El dano es localizado o se extiende en varias zonas?",
+    multiSelect: false,
+    options: [
+      { value: "localizado", label: "Localizado\n(area pequena)", icon: "📍" },
+      { value: "generalizado", label: "Generalizado\n(varias zonas)", icon: "🗺️" },
+    ]
+  },
+  {
+    id: "movimiento", title: "Movimiento de Grietas",
+    subtitle: "Las grietas estan estables o siguen creciendo?",
+    multiSelect: false,
+    conditional: (a) => a["dano"] === "grietas",
+    options: [
+      { value: "sin_movimiento", label: "Estable\n(sin cambios)", icon: "🔒" },
+      { value: "con_movimiento", label: "Activa\n(sigue creciendo)", icon: "📈" },
+      { value: "no_se", label: "No estoy\nseguro", icon: "❓" },
+    ]
+  },
+  {
+    id: "severidad", title: "Severidad Percibida",
+    subtitle: "Como evaluas la gravedad de la situacion?",
+    multiSelect: false,
+    options: [
+      { value: "estetico", label: "Solo\nestetico", icon: "🟢" },
+      { value: "preocupante", label: "Preocupante\npero estable", icon: "🟡" },
+      { value: "peligroso", label: "Parece\npeligroso", icon: "🟠" },
+      { value: "emergencia", label: "Emergencia\nColapso", icon: "🔴" },
+    ]
+  }
+];
+
 // ─── State ──────────────────────────────────────────
 let geminiKey = "";
 let claudeKey = "";
 let provider: Provider = "gemini";
 let historial: Reporte[] = [];
 let currentImageBase64 = "";
+let qCurrentStep = 0;
+let qAnswers: Record<string, string> = {};
+let qOriginalText = "";
+let qIsSummary = false;
 
 // ─── DOM refs ────────────────────────────────────────
 const pages = document.querySelectorAll(".page") as NodeListOf<HTMLElement>;
@@ -63,13 +184,30 @@ const historialBody = document.getElementById("historialBody") as HTMLDivElement
 const guiaBody = document.getElementById("guiaBody") as HTMLDivElement;
 const loadingOverlay = document.getElementById("loadingOverlay") as HTMLDivElement;
 
+// Cuestionario DOM refs
+const cuestionarioBody = document.getElementById("cuestionarioBody") as HTMLDivElement;
+const qStepContainer = document.getElementById("qStepContainer") as HTMLDivElement;
+const qProgressBar = document.getElementById("qProgressBar") as HTMLDivElement;
+const cuestionarioStep = document.getElementById("cuestionarioStep") as HTMLSpanElement;
+const btnQSkip = document.getElementById("btnQSkip") as HTMLButtonElement;
+const btnQNext = document.getElementById("btnQNext") as HTMLButtonElement;
+const btnQSkipAll = document.getElementById("btnQSkipAll") as HTMLButtonElement;
+const btnCuestionarioBack = document.getElementById("btnCuestionarioBack") as HTMLButtonElement;
+
 // ─── System Prompt (shared, optimized for low token usage) ─────
+const IMAGENES_LISTA = generarListaImagenes();
+
 const SYSTEM_PROMPT = `Perito estructural experto. Analiza la informacion y diagnostica.
 Responde SOLO JSON valido (sin markdown):
-{"tipo_falla":"string","nivel_peligro":"critico|alto|medio|bajo","debe_desalojar":bool,"descripcion":"string","recomendaciones":["string"],"urgencia":"string"}
+{"tipo_falla":"string","nivel_peligro":"critico|alto|medio|bajo","debe_desalojar":bool,"descripcion":"string","recomendaciones":["string"],"urgencia":"string","imagen_referencia":"id"}
 
 Niveles: CRITICO=colapso inminente,desalojar. ALTO=peligro,reparar urgente. MEDIO=atencion programada. BAJO=monitorear.
 Sin falla clara: nivel_peligro="bajo".
+
+IMPORTANTE: Distinguir entre danos superficiales (pintura, enlucido, recubrimiento) y danos estructurales (concreto, acero). Una columna tiene capas: pintura > enlucido > recubrimiento > concreto > acero. Grietas solo en enlucido/pintura son BAJO o MEDIO. Grietas que penetran al concreto estructural son ALTO o CRITICO. Si la descripcion no especifica profundidad, preguntar en la descripcion que podria ser superficial.
+
+Para imagen_referencia, elige el ID mas relevante de esta lista:
+${IMAGENES_LISTA}
 
 Basa recomendaciones en este documento tecnico:
 ${CRITERIOS_DISENO_KNOWLEDGE}`;
@@ -471,6 +609,18 @@ function renderResultadoComun(r: ResultadoTriaje, nivel: { icon: string; label: 
   // Danger badge
   html += `<div class="danger-badge ${r.nivel_peligro}">${nivel.icon} ${nivel.label}</div>`;
 
+  // Imagen de referencia del documento tecnico
+  if (r.imagen_referencia) {
+    const imgRef = buscarImagen(r.imagen_referencia);
+    if (imgRef) {
+      html += `<div class="result-section ref-image-section">
+        <h3>📐 Diagrama de Referencia</h3>
+        <p class="ref-figura">${imgRef.figura}: ${imgRef.descripcion}</p>
+        <img src="./images/${imgRef.archivo}" class="ref-image" alt="${imgRef.descripcion}">
+      </div>`;
+    }
+  }
+
   // Evacuation alert
   if (r.debe_desalojar) {
     html += `<div class="desalojar-alert">
@@ -624,12 +774,276 @@ function renderGuia() {
   });
 }
 
+// ─── Cuestionario Logic ──────────────────────────────
+function getActiveSteps(): QuestionStep[] {
+  return QUESTION_STEPS.filter(step => {
+    if (step.conditional) return step.conditional(qAnswers);
+    return true;
+  });
+}
+
+function startQuestionnaire(texto: string) {
+  qOriginalText = texto;
+  qCurrentStep = 0;
+  qAnswers = {};
+  qIsSummary = false;
+  btnQSkip.style.display = "";
+  btnQSkipAll.style.display = "";
+  navigateTo("cuestionario");
+  renderCurrentStep();
+}
+
+function renderCurrentStep() {
+  const activeSteps = getActiveSteps();
+  if (qCurrentStep >= activeSteps.length) {
+    showSummaryStep();
+    return;
+  }
+  const step = activeSteps[qCurrentStep];
+  const totalSteps = activeSteps.length;
+
+  const progress = ((qCurrentStep + 1) / (totalSteps + 1)) * 100;
+  qProgressBar.style.width = `${progress}%`;
+  cuestionarioStep.textContent = `${qCurrentStep + 1}/${totalSteps}`;
+
+  let html = "";
+  if (qCurrentStep === 0) {
+    const preview = qOriginalText.length > 100 ? qOriginalText.substring(0, 100) + "..." : qOriginalText;
+    html += `<div class="q-original-text">"${preview}"</div>`;
+  }
+
+  html += `<h2 class="q-title">${step.title}</h2>`;
+  html += `<p class="q-subtitle">${step.subtitle}</p>`;
+  html += `<div class="q-options">`;
+  const currentValue = qAnswers[step.id];
+  for (const opt of step.options) {
+    const selected = currentValue === opt.value ? "selected" : "";
+    html += `<button class="q-option ${selected}" data-step="${step.id}" data-value="${opt.value}">
+      <span class="q-option-icon">${opt.icon}</span>
+      <span class="q-option-label">${opt.label}</span>
+    </button>`;
+  }
+  html += `</div>`;
+
+  if (step.subQuestion) {
+    html += `<p class="q-subtitle" style="margin-top:4px;">${step.subQuestion.title}</p>`;
+    html += `<div class="q-options q-options--row">`;
+    const subValue = qAnswers[step.subQuestion.id];
+    for (const opt of step.subQuestion.options) {
+      const selected = subValue === opt.value ? "selected" : "";
+      html += `<button class="q-option ${selected}" data-step="${step.subQuestion.id}" data-value="${opt.value}">
+        <span class="q-option-label">${opt.label}</span>
+      </button>`;
+    }
+    html += `</div>`;
+  }
+
+  qStepContainer.innerHTML = html;
+  btnQNext.textContent = qCurrentStep === totalSteps - 1 ? "Revisar y Analizar" : "Siguiente";
+  btnQSkip.style.display = "";
+  btnQSkipAll.style.display = "";
+  qIsSummary = false;
+
+  qStepContainer.querySelectorAll(".q-option").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const stepId = btn.getAttribute("data-step")!;
+      const value = btn.getAttribute("data-value")!;
+      qAnswers[stepId] = value;
+      const siblings = btn.parentElement!.querySelectorAll(".q-option");
+      siblings.forEach(s => s.classList.remove("selected"));
+      btn.classList.add("selected");
+    });
+  });
+
+  cuestionarioBody.scrollTop = 0;
+}
+
+function showSummaryStep() {
+  qIsSummary = true;
+  const activeSteps = getActiveSteps();
+  qProgressBar.style.width = "100%";
+  cuestionarioStep.textContent = "Resumen";
+
+  let html = `<h2 class="q-title">Resumen</h2>`;
+  html += `<p class="q-subtitle">Revisa la informacion antes de analizar</p>`;
+  html += `<div class="q-summary">`;
+  html += `<div class="q-summary-item" style="flex-direction:column;align-items:flex-start;">
+    <span class="q-summary-label">Descripcion original</span>
+    <span class="q-summary-value" style="margin-top:4px;font-weight:400;max-width:100%;text-align:left;">"${qOriginalText}"</span>
+  </div>`;
+
+  for (const step of activeSteps) {
+    const answer = qAnswers[step.id];
+    const opt = step.options.find(o => o.value === answer);
+    html += `<div class="q-summary-item">
+      <span class="q-summary-label">${step.title}</span>
+      <span class="q-summary-value ${!answer ? 'q-summary-skip' : ''}">
+        ${opt ? opt.label.replace(/\n/g, " ") : "No especificado"}
+      </span>
+    </div>`;
+    if (step.subQuestion && qAnswers[step.subQuestion.id]) {
+      html += `<div class="q-summary-item">
+        <span class="q-summary-label" style="padding-left:12px;">${step.subQuestion.title}</span>
+        <span class="q-summary-value">${qAnswers[step.subQuestion.id]}</span>
+      </div>`;
+    }
+  }
+  html += `</div>`;
+
+  qStepContainer.innerHTML = html;
+  btnQNext.textContent = "Analizar con IA";
+  btnQSkip.style.display = "none";
+  btnQSkipAll.style.display = "none";
+  cuestionarioBody.scrollTop = 0;
+}
+
+function compileDescription(): string {
+  const parts: string[] = [`Descripcion del usuario: ${qOriginalText}`];
+  const structured: string[] = [];
+
+  const elemento = qAnswers["elemento"];
+  if (elemento) {
+    const labels: Record<string, string> = {
+      columna: "Columna", viga: "Viga", losa: "Losa de entrepiso/azotea",
+      muro: "Muro", cimentacion: "Cimentacion/zapata", pilote: "Pilote",
+    };
+    structured.push(`Elemento afectado: ${labels[elemento] || elemento}`);
+  }
+
+  const dano = qAnswers["dano"];
+  if (dano) {
+    const labels: Record<string, string> = {
+      grietas: "Grietas y fisuras", corrosion: "Corrosion del acero de refuerzo",
+      desprendimiento: "Desprendimiento de concreto/recubrimiento",
+      deformacion: "Deformacion o pandeo del elemento",
+      hundimiento: "Hundimiento o asentamiento diferencial",
+      humedad: "Humedad y filtraciones",
+    };
+    structured.push(`Tipo de dano: ${labels[dano] || dano}`);
+  }
+
+  const prof = qAnswers["profundidad"];
+  if (prof) {
+    const labels: Record<string, string> = {
+      pintura: "Superficial - solo afecta pintura o enlucido",
+      recubrimiento: "Concreto de recubrimiento expuesto (superficial)",
+      estructural: "Dano al concreto estructural (profundo)",
+      acero_visible: "Acero de refuerzo visible (profundo)",
+      acero_oxidado: "Acero de refuerzo oxidado con perdida de seccion (profundo, corrosion activa)",
+    };
+    structured.push(`Profundidad: ${labels[prof] || prof}`);
+  }
+
+  const grietaOrient = qAnswers["grietas_detalle"];
+  if (grietaOrient) {
+    const labels: Record<string, string> = {
+      diagonal_45: "Diagonales a 45 grados (sugiere falla por cortante)",
+      horizontal: "Horizontales (sugiere falla por flexion)",
+      vertical: "Verticales (sugiere falla por flexion)",
+      helicoidal: "Helicoidales/espiral (sugiere falla por torsion)",
+      mapa: "Ramificadas tipo mapa (dano generalizado)",
+    };
+    structured.push(`Orientacion de grietas: ${labels[grietaOrient] || grietaOrient}`);
+  }
+
+  const grietaAncho = qAnswers["grietas_ancho"];
+  if (grietaAncho) structured.push(`Ancho de grietas: ${grietaAncho}`);
+
+  const ext = qAnswers["extension"];
+  if (ext) {
+    structured.push(`Extension: ${ext === "localizado" ? "Dano localizado en area pequena" : "Dano generalizado en multiples zonas"}`);
+  }
+
+  const mov = qAnswers["movimiento"];
+  if (mov) {
+    const labels: Record<string, string> = {
+      sin_movimiento: "Grietas sin movimiento (estables)",
+      con_movimiento: "Grietas con movimiento activo (siguen creciendo)",
+      no_se: "No se ha determinado si hay movimiento",
+    };
+    structured.push(`Movimiento: ${labels[mov] || mov}`);
+  }
+
+  const sev = qAnswers["severidad"];
+  if (sev) {
+    const labels: Record<string, string> = {
+      estetico: "El usuario percibe el dano como solo estetico",
+      preocupante: "El usuario percibe el dano como preocupante pero la estructura parece estable",
+      peligroso: "El usuario percibe la situacion como peligrosa con deformacion visible",
+      emergencia: "EMERGENCIA: El usuario reporta riesgo de colapso, post-sismo o post-incendio",
+    };
+    structured.push(`Severidad percibida: ${labels[sev] || sev}`);
+  }
+
+  if (structured.length > 0) {
+    parts.push("\nInformacion estructurada del cuestionario:");
+    parts.push(structured.join("\n"));
+  }
+
+  return parts.join("\n");
+}
+
 // ─── Event Listeners ────────────────────────────────
 btnCapturar.addEventListener("click", () => captureImage(false));
 btnGaleria.addEventListener("click", () => captureImage(true));
 
 btnAnalizarTexto.addEventListener("click", () => {
-  analyzeText(textoProblema.value);
+  const texto = textoProblema.value.trim();
+  if (!texto) {
+    alert("Por favor describe el problema estructural que observas.");
+    return;
+  }
+  if (!getCurrentKey()) {
+    alert(`Primero configura tu API Key de ${getProviderName()} en la seccion de Configuracion.`);
+    navigateTo("config");
+    return;
+  }
+  startQuestionnaire(texto);
+});
+
+// Cuestionario navigation
+btnQNext.addEventListener("click", () => {
+  const activeSteps = getActiveSteps();
+  if (qIsSummary) {
+    const compiledText = compileDescription();
+    analyzeText(compiledText);
+    return;
+  }
+  if (qCurrentStep < activeSteps.length - 1) {
+    qCurrentStep++;
+    renderCurrentStep();
+  } else {
+    qCurrentStep = activeSteps.length;
+    showSummaryStep();
+  }
+});
+
+btnQSkip.addEventListener("click", () => {
+  const activeSteps = getActiveSteps();
+  if (qCurrentStep < activeSteps.length - 1) {
+    qCurrentStep++;
+    renderCurrentStep();
+  } else {
+    qCurrentStep = activeSteps.length;
+    showSummaryStep();
+  }
+});
+
+btnCuestionarioBack.addEventListener("click", () => {
+  if (qIsSummary) {
+    const activeSteps = getActiveSteps();
+    qCurrentStep = activeSteps.length - 1;
+    renderCurrentStep();
+  } else if (qCurrentStep > 0) {
+    qCurrentStep--;
+    renderCurrentStep();
+  } else {
+    navigateTo("inicio");
+  }
+});
+
+btnQSkipAll.addEventListener("click", () => {
+  analyzeText(qOriginalText);
 });
 
 // Save Gemini key
