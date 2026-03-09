@@ -782,8 +782,36 @@ function renderGuia() {
     html += `</div></div>`;
   }
 
-  html += `<div style="text-align:center;padding:16px;color:var(--fg3);font-size:12px;line-height:18px;">
-    Guia basada en el documento "Criterios de Diseno y Detalles Estructurales"<br>y practicas estandar de ingenieria estructural.<br>No sustituye la evaluacion de un profesional.
+  html += `<div class="guia-docs-section">
+    <h3>📚 Documentos Completos</h3>
+    <p>Para revisar mas a fondo las normas y procedimientos:</p>
+    <a href="https://1024terabox.com/s/1K6PHX2WPcqYjo74IF8D9VA" target="_blank" class="guia-doc-link">
+      <span class="doc-icon">📖</span>
+      <div class="doc-info">
+        <span class="doc-title">Guia de Reparacion de Estructuras</span>
+        <span class="doc-desc">Basado en ACI 224 - Tecnicas de reparacion y diagnostico</span>
+      </div>
+      <span class="doc-arrow">↗</span>
+    </a>
+    <a href="https://1024terabox.com/s/1z30qPfmI35vHHXI81qc9cA" target="_blank" class="guia-doc-link">
+      <span class="doc-icon">🏗️</span>
+      <div class="doc-info">
+        <span class="doc-title">FEMA 547</span>
+        <span class="doc-desc">Tecnicas de rehabilitacion sismica de edificios existentes</span>
+      </div>
+      <span class="doc-arrow">↗</span>
+    </a>
+    <a href="https://1024terabox.com/s/1ANgwfjpOKAQwQqSNQJ59bw" target="_blank" class="guia-doc-link">
+      <span class="doc-icon">📋</span>
+      <div class="doc-info">
+        <span class="doc-title">Manual Completo</span>
+        <span class="doc-desc">Criterios de Diseno y Detalles Estructurales</span>
+      </div>
+      <span class="doc-arrow">↗</span>
+    </a>
+  </div>
+  <div style="text-align:center;padding:12px;color:var(--fg3);font-size:11px;line-height:16px;">
+    No sustituye la evaluacion de un profesional.
   </div>`;
 
   guiaBody.innerHTML = html;
