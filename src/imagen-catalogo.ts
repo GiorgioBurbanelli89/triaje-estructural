@@ -1,6 +1,8 @@
 /**
- * Catalogo de imagenes de referencia del documento tecnico
- * "Criterios de Diseno y Detalles Estructurales"
+ * Catalogo de imagenes de referencia de los documentos tecnicos:
+ * 1. "Criterios de Diseno y Detalles Estructurales" (prefijo p)
+ * 2. FEMA 547 "Rehabilitacion Sismica" (prefijo f)
+ * 3. "Guia Reparacion Estructuras ACI 224" (prefijo g)
  * Cada imagen esta mapeada a su figura y descripcion para que la IA seleccione la mas relevante.
  */
 
@@ -46,6 +48,47 @@ export const CATALOGO_IMAGENES: ImagenReferencia[] = [
   { id: "p41", archivo: "pagina_41_img_1.png", figura: "Fig 8.9.8", descripcion: "Refuerzo de torsion en vigas con hormigon colado" },
   { id: "p42", archivo: "pagina_42_img_1.png", figura: "Fig 8.9.9", descripcion: "Refuerzo de torsion en vigas con hormigon lanzado" },
   { id: "p43", archivo: "pagina_43_img_1.png", figura: "Fig 8.9.10", descripcion: "Refuerzo de torsion en vigas con laminas o placas metalicas adheridas con epoxi" },
+
+  // ─── FEMA 547: Rehabilitacion Sismica ─────────────────
+  { id: "f1", archivo: "fema_image1.png", figura: "FEMA 13.4.2-3", descripcion: "Refuerzo de viga de acoplamiento profunda en muro de corte - concreto nuevo con estribos X" },
+  { id: "f2", archivo: "fema_image2.png", figura: "FEMA 13.4.2-3b", descripcion: "Detalle de transferencia de corte losa-muro de corte" },
+  { id: "f5", archivo: "fema_image5.png", figura: "FEMA 12.4.3-1", descripcion: "Colector en diafragma de concreto - barras nuevas y dowels perforados" },
+  { id: "f10", archivo: "fema_image10.png", figura: "FEMA 12.4.1-2B", descripcion: "Conexion tipica a viga de concreto existente con marco arriostrado" },
+  { id: "f11", archivo: "fema_image11.png", figura: "FEMA 8.4.1-1", descripcion: "Conexion completamente soldada en marco arriostrado de acero (SCBF)" },
+  { id: "f13", archivo: "fema_image13.png", figura: "FEMA 8.4.1-2", descripcion: "Conexion compacta de marco arriostrado de acero" },
+  { id: "f15", archivo: "fema_image15.png", figura: "FEMA 12.4.3-3", descripcion: "Colector de concreto en viga existente - detalle de vaciado y estribos" },
+  { id: "f17", archivo: "fema_image17.png", figura: "FEMA 12.4.4-1A", descripcion: "Rehabilitacion sismica de columna con encamisado FRP - rectangular con zonas de mejora" },
+  { id: "f19", archivo: "fema_image19.png", figura: "FEMA 12.4.4-1B", descripcion: "Rehabilitacion sismica de columna circular con encamisado FRP" },
+  { id: "f20", archivo: "fema_image20.png", figura: "FEMA 12.4.4-2a", descripcion: "Encamisado de columna de concreto con nueva capa de concreto armado" },
+  { id: "f21", archivo: "fema_image21.png", figura: "FEMA 12.4.4-2b", descripcion: "Encamisado de columna con platinas de acero" },
+  { id: "f23", archivo: "fema_image23.png", figura: "FEMA 8.4.5-1", descripcion: "Placa base modificada para resistir tension sismica columna-cimentacion" },
+  { id: "f25", archivo: "fema_image25.png", figura: "FEMA 8.4.7-1", descripcion: "Empalme soldado de columna reforzado segun AISC sismico" },
+  { id: "f27", archivo: "fema_image27.png", figura: "FEMA 5.4.1-6B", descripcion: "Conexion de revestimiento a estructura de madera con angulos de acero" },
+  { id: "f31", archivo: "fema_image31.png", figura: "FEMA 5.4.1-13", descripcion: "Reduccion de altura efectiva de muro de corte esbelto con correa colectora" },
+  { id: "f33", archivo: "fema_image33.png", figura: "FEMA 23.9.3-1", descripcion: "Mejoramiento del suelo bajo cimentacion superficial - inyeccion en suelo licuable" },
+  { id: "f34", archivo: "fema_image34.png", figura: "FEMA 23.9.3-2", descripcion: "Seccion transversal de grout inyectado bajo zapata en suelo licuable" },
+
+  // ─── Guia Reparacion Estructuras (ACI 224) ─────────────
+  { id: "g1", archivo: "guia_image1.png", figura: "Guia Fig 1.1", descripcion: "Longitudes de traslape requeridas segun tipo de elemento estructural" },
+  { id: "g5", archivo: "guia_image5.png", figura: "Guia Fig 1.2", descripcion: "Tipos de traslape de barras en elementos verticales (columnas)" },
+  { id: "g8", archivo: "guia_image8.png", figura: "Guia Fig 2.1", descripcion: "Encofrado y vaciado en vigas y columnas - equipo y herramientas" },
+  { id: "g9", archivo: "guia_image9.png", figura: "Guia Fig 3.1", descripcion: "Empaquetamiento seco (Dry Packing) en cavidad vertical" },
+  { id: "g10", archivo: "guia_image10.png", figura: "Guia Fig 4.1", descripcion: "Inyeccion de grout entre agregado precolocado - proceso progresivo" },
+  { id: "g11", archivo: "guia_image11.png", figura: "Guia Fig 5.1", descripcion: "Concreto lanzado (shotcrete) via seca - proceso en boquilla" },
+  { id: "g12", archivo: "guia_image12.png", figura: "Guia Fig 5.2", descripcion: "Concreto lanzado (shotcrete) via humeda - esquema del proceso" },
+  { id: "g13", archivo: "guia_image13.png", figura: "Guia Fig 6.1", descripcion: "Inyeccion de fisuras y grietas - en vigas, losas y muros con equipo" },
+  { id: "g14", archivo: "guia_image14.png", figura: "Guia Fig 7.1", descripcion: "Grout en reparaciones sumergidas - encofrado hermetico para pilotes" },
+  { id: "g17", archivo: "guia_image17.png", figura: "Guia Fig 9.1", descripcion: "Reparacion manual con mortero de reparacion" },
+  { id: "g28", archivo: "guia_image28.png", figura: "Guia Fig 9.4", descripcion: "Reparacion de viga - refuerzo de seccion en zona danada" },
+  { id: "g29", archivo: "guia_image29.png", figura: "Guia Fig 10.1", descripcion: "Patron de fisuras por retraccion hidraulica y termica" },
+  { id: "g31", archivo: "guia_image31.png", figura: "Guia Fig 11.1", descripcion: "Fisuracion por reaccion alcalis-agregado - patron en red tipo cocodrilo" },
+  { id: "g36", archivo: "guia_image36.png", figura: "Guia Fig 12.2", descripcion: "Fisuras por compresion en zona superior de viga" },
+  { id: "g39", archivo: "guia_image39.png", figura: "Guia Fig 12.4", descripcion: "Fisuras de flexion en losa - vista inferior" },
+  { id: "g40", archivo: "guia_image40.png", figura: "Guia Fig 12.5", descripcion: "Fisuras por torsion en losa - patron diagonal a 45 grados" },
+  { id: "g41", archivo: "guia_image41.png", figura: "Guia Fig 12.6", descripcion: "Fisuras por torsion en viga - patron espiral" },
+  { id: "g42", archivo: "guia_image42.png", figura: "Guia Fig 13.1", descripcion: "Corrosion por carbonatacion - descascaramiento y barras expuestas" },
+  { id: "g43", archivo: "guia_image43.png", figura: "Guia Fig 14.1", descripcion: "Oquedades superficiales por consolidacion deficiente del hormigon" },
+  { id: "g44", archivo: "guia_image44.png", figura: "Guia Fig 14.2", descripcion: "Oquedades por deficiencias en posicionamiento del acero" },
 ];
 
 /** Genera la lista compacta de imagenes para el system prompt */

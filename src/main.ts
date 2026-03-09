@@ -4,7 +4,7 @@
  * Soporta analisis por foto y por descripcion de texto
  */
 import { GUIA_REPARACION } from "./guia-data.js";
-import { CRITERIOS_DISENO_KNOWLEDGE } from "./criterios-knowledge.js";
+import { CRITERIOS_DISENO_KNOWLEDGE, FEMA_547_KNOWLEDGE, GUIA_REPARACION_KNOWLEDGE } from "./criterios-knowledge.js";
 import { generarListaImagenes, buscarImagen } from "./imagen-catalogo.js";
 
 // ─── Interfaces ──────────────────────────────────────
@@ -214,8 +214,10 @@ IMPORTANTE: Distinguir entre danos superficiales (pintura, enlucido, recubrimien
 Para imagen_referencia, elige el ID mas relevante de esta lista:
 ${IMAGENES_LISTA}
 
-Basa recomendaciones en este documento tecnico:
-${CRITERIOS_DISENO_KNOWLEDGE}`;
+Basa recomendaciones en estos documentos tecnicos:
+${CRITERIOS_DISENO_KNOWLEDGE}
+${FEMA_547_KNOWLEDGE}
+${GUIA_REPARACION_KNOWLEDGE}`;
 
 // ─── Navigation ──────────────────────────────────────
 function navigateTo(pageId: string) {
