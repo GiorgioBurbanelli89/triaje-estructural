@@ -14,6 +14,7 @@ interface ResultadoTriaje {
   debe_desalojar: boolean;
   descripcion: string;
   recomendaciones: string[];
+  tecnicas_reparacion?: string[];
   urgencia: string;
   imagen_referencia?: string;
 }
@@ -204,12 +205,20 @@ const IMAGENES_LISTA = generarListaImagenes();
 
 const SYSTEM_PROMPT = `Perito estructural experto. Analiza la informacion y diagnostica.
 Responde SOLO JSON valido (sin markdown):
-{"tipo_falla":"string","nivel_peligro":"critico|alto|medio|bajo","debe_desalojar":bool,"descripcion":"string","recomendaciones":["string"],"urgencia":"string","imagen_referencia":"id"}
+{"tipo_falla":"string","nivel_peligro":"critico|alto|medio|bajo","debe_desalojar":bool,"descripcion":"string","recomendaciones":["string"],"tecnicas_reparacion":["string"],"urgencia":"string","imagen_referencia":"id"}
 
 Niveles: CRITICO=colapso inminente,desalojar. ALTO=peligro,reparar urgente. MEDIO=atencion programada. BAJO=monitorear.
 Sin falla clara: nivel_peligro="bajo".
 
 IMPORTANTE: Distinguir entre danos superficiales (pintura, enlucido, recubrimiento) y danos estructurales (concreto, acero). Una columna tiene capas: pintura > enlucido > recubrimiento > concreto > acero. Grietas solo en enlucido/pintura son BAJO o MEDIO. Grietas que penetran al concreto estructural son ALTO o CRITICO. Si la descripcion no especifica profundidad, preguntar en la descripcion que podria ser superficial.
+
+TECNICAS DE REPARACION: En "tecnicas_reparacion" indica las tecnicas aplicables segun el dano, citando SIEMPRE la norma de origen. Formato: "Nombre tecnica (Norma: seccion)". Ejemplos:
+- "Inyeccion de fisuras con epoxi (Guia ACI 224: Tecnica 6)"
+- "Encamisado con FRP (FEMA 547: Cap.12.4.4)"
+- "Refuerzo de emergencia con laminas soldadas (Criterios de Diseno: Cap.8.8)"
+- "Shotcrete via seca (Guia ACI 224: Tecnica 5)"
+- "Encamisado de concreto armado (FEMA 547: Cap.12.4.4)"
+Incluir al menos 2-3 tecnicas relevantes.
 
 Para imagen_referencia, elige el ID mas relevante de esta lista:
 ${IMAGENES_LISTA}
@@ -659,6 +668,18 @@ function renderResultadoComun(r: ResultadoTriaje, nivel: { icon: string; label: 
     html += `<div class="result-section">
       <h3>Recomendaciones</h3>
       <ul>${r.recomendaciones.map(rec => `<li>${rec}</li>`).join("")}</ul>
+    </div>`;
+  }
+
+  // Tecnicas de reparacion
+  if (r.tecnicas_reparacion?.length) {
+    html += `<div class="result-section tecnicas-section">
+      <h3>🔧 Tecnicas de Reparacion</h3>
+      <ul>${r.tecnicas_reparacion.map(tec => {
+        // Resaltar la norma entre parentesis
+        const formatted = tec.replace(/\(([^)]+)\)/g, '<span class="norma-ref">($1)</span>');
+        return `<li>${formatted}</li>`;
+      }).join("")}</ul>
     </div>`;
   }
 

@@ -381,6 +381,12 @@ html, body {
   background: #FFF;
 }
 
+/* ═══ Tecnicas de Reparacion ═══ */
+.tecnicas-section { background: #F0FFF4 !important; border-color: #38A169 !important; }
+.tecnicas-section h3 { color: #2F855A; }
+.tecnicas-section li { margin-bottom: 8px; }
+.norma-ref { font-weight: 600; color: #2B6CB0; font-size: 0.9em; }
+
 /* ═══ Provider Selector ═══ */
 .provider-selector {
   display: flex; flex-direction: column; gap: 8px;
