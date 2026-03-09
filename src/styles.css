@@ -381,6 +381,13 @@ html, body {
   background: #FFF;
 }
 
+/* ═══ Imagenes en Guia de Reparacion ═══ */
+.metodo-imagenes { background: #F0F4FF; border-radius: 8px; padding: 12px; margin-top: 8px; }
+.metodo-imagenes h5 { color: var(--accent); margin-bottom: 8px; }
+.metodo-img-item { margin-bottom: 12px; }
+.metodo-img { width: 100%; border-radius: 8px; border: 1px solid var(--border); background: #FFF; }
+.metodo-img-desc { display: block; font-size: 11px; color: var(--fg2); font-style: italic; margin-top: 4px; line-height: 1.4; }
+
 /* ═══ Tecnicas de Reparacion ═══ */
 .tecnicas-section { background: #F0FFF4 !important; border-color: #38A169 !important; }
 .tecnicas-section h3 { color: #2F855A; }

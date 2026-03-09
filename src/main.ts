@@ -768,6 +768,13 @@ function renderGuia() {
             <h5>Procedimiento:</h5>
             ${metodo.pasos.map((p, i) => `<div class="paso-item"><span class="paso-num">${i + 1}</span><span class="paso-text">${p}</span></div>`).join("")}
           </div>
+          ${metodo.imagenes?.length ? `<div class="metodo-seccion metodo-imagenes">
+            <h5>📐 Diagramas de Referencia:</h5>
+            ${metodo.imagenes.map(img => `<div class="metodo-img-item">
+              <img src="./images/${img.archivo}" alt="${img.descripcion}" class="metodo-img" loading="lazy">
+              <span class="metodo-img-desc">${img.descripcion}</span>
+            </div>`).join("")}
+          </div>` : ""}
         </div>
       </div>`;
     });
